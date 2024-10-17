@@ -35,14 +35,14 @@ vector<vector<vector<float>>> deserialize(istream& is)
 	return layers;
 }
 
-int8_t to_int8(float f)
+uint8_t to_int8(float f)
 {
 	f = f > 1.f ? 1.f : f;
 	f = f < -1.f ? -1.f : f;
 	return static_cast<int8_t>(f * 126);
 }
 
-int8_t to_int8(char f)
+uint8_t to_int8(const char f)
 {
 	switch (f)
 	{
@@ -54,24 +54,24 @@ int8_t to_int8(char f)
 		return 0b01111111;
 	default:  // should not happen
 		return 0;
-	};
+	}
 }
 
-float to_float(int8_t i)
+float to_float(const uint8_t i)
 {
 	return static_cast<float>(i) / 126.f;
 }
 
-vector<int8_t> serialize(const vector<vector<vector<float>>>& data)
+vector<uint8_t> serialize(const vector<vector<vector<float>>>& data)
 {
-	vector<int8_t> serialized;
+	vector<uint8_t> serialized;
 	for (size_t i = 0; i < data.size(); ++i)
 	{
 		for (size_t j = 0; j < data[i].size(); ++j)
 		{
-			for (size_t k = 0; k < data[i][j].size(); ++k)
+			for (const float k : data[i][j])
 			{
-				serialized.push_back(to_int8(data[i][j][k]));
+				serialized.push_back(to_int8(k));
 			}
 			if (j != data[i].size() - 1)
 			{
@@ -86,36 +86,36 @@ vector<int8_t> serialize(const vector<vector<vector<float>>>& data)
 	return serialized;
 }
 
-vector<vector<vector<float>>> deserialize(const vector<int8_t>& serialized)
+vector<vector<vector<float>>> deserialize(const vector<uint8_t>& serialized)
 {
-	vector<vector<vector<float>>> layers(1, vector<vector<float>>(1, vector<float>()));
+	vector layers(1, vector(1, vector<float>()));
 	int layer = 0;
 	int neuron = 0;
-	for (size_t i = 0; i < serialized.size(); ++i)
+	for (const unsigned char param : serialized)
 	{
-		if (serialized[i] == to_int8('*'))
+		if (param == to_int8('*'))
 		{
 			++layer;
 			neuron = 0;
-			layers.push_back(vector<vector<float>>(1, vector<float>()));
+			layers.emplace_back(1, vector<float>());
 		}
-		else if (serialized[i] == to_int8('/'))
+		else if (param == to_int8('/'))
 		{
 			++neuron;
-			layers[layer].push_back(vector<float>());
+			layers[layer].emplace_back();
 		}
 		else
 		{
-			layers[layer][neuron].push_back(to_float(serialized[i]));
+			layers[layer][neuron].push_back(to_float(param));
 		}
 	}
 	return layers;
 }
 
-vector<bool> decode(int rec, int n_neurons)
+vector<bool> decode(int rec, const int n_layers)
 {
-	vector<bool> recs(n_neurons);
-	for (int i = 0; i < n_neurons; ++i)
+	vector<bool> recs(n_layers);
+	for (int i = 0; i < n_layers; ++i)
 	{
 		recs[i] = rec & 1;
 		rec >>= 1;
@@ -126,7 +126,7 @@ vector<bool> decode(int rec, int n_neurons)
 int encode(const vector<bool>& rec)
 {
 	int recs = 0;
-	for (int i = rec.size() - 1; i >= 0; --i)
+	for (int i = static_cast<int>(rec.size()) - 1; i >= 0; --i)
 	{
 		recs <<= 1;
 		recs += rec[i];

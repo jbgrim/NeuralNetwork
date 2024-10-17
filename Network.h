@@ -12,7 +12,7 @@ namespace NeuralNetwork {
         Network(); // Empty network constructor
 
         explicit Network(const vector<int> &layers); // Construct a network with the given layers
-        explicit Network(vector<vector<vector<float> > > data); // Construct a network from existing data
+        explicit Network(const vector<vector<vector<float> > >& data); // Construct a network from existing data
         explicit Network(istream &is); // Construct a network from the stream data
 
         // Similar to the previous constructors, but with recurrent neurons
@@ -24,8 +24,8 @@ namespace NeuralNetwork {
 
         vector<float> compute(const vector<float> &inputs);  // Calculate the network output value applied to the inputs
 
-        vector<vector<vector<float> > > get_layers() const { return m_layers_; }; // Returns the network weights
-        vector<bool> get_rec() const { return m_rec_; }; // Returns information about recurrent neurons
+        vector<vector<vector<float> > > get_layers() const { return m_layers_; } // Returns the network weights
+        vector<bool> get_rec() const { return m_rec_; } // Returns information about recurrent neurons
 
         static Network reproduce(const Network &parent1, const Network &parent2, float mutation_rate = .01f);  // Genetic crossover and mutation operator
 
@@ -40,9 +40,9 @@ namespace NeuralNetwork {
         void wire_fit(const vector<float> &xt, const vector<float> &xt1, float R, const vector<vector<float> > &wires,
                       const vector<float> &q_values, int imax, float alpha, float gamma, float epsilon, float c);
 
-        int getWireCount() const { return m_n_wires_; };
-        int getOutputsCount() const { return m_n_outputs_; };
-        int getControlsCount() const { return m_n_controls_; };
+        int getWireCount() const { return m_n_wires_; }
+        int getOutputsCount() const { return m_n_outputs_; }
+        int getControlsCount() const { return m_n_controls_; }
 
     private:
         void mutation(float mutation_rate = .01f); // Apply the mutation genetic operator
@@ -64,8 +64,8 @@ namespace NeuralNetwork {
     int encode(const vector<bool>& rec);
 
     // Serialize and deserialize the network as binary data
-    vector<int8_t> serialize(const vector<vector<vector<float>>>& data);
-    vector<vector<vector<float>>> deserialize(const vector<int8_t>& serialized);
+    vector<uint8_t> serialize(const vector<vector<vector<float>>>& data);
+    vector<vector<vector<float>>> deserialize(const vector<uint8_t>& serialized);
     vector<vector<vector<float>>> deserialize(istream& is);
 } // NeuralNetwork
 
