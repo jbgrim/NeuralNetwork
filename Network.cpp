@@ -7,15 +7,15 @@
 // Initialize the seed
 std::random_device rd_;
 // Initialize the random distribution
-std::uniform_real_distribution<float> distribution(-1.f, 1.f);
+std::uniform_real_distribution distribution(-1.f, 1.f);
 // Initialize the random generator
 std::default_random_engine generator(rd_());
 
 namespace NeuralNetwork {
-    // Op�rations matricielles et vectorielles
+    // Matrix and vector operations
     // ---------------------------------------
-    // Produit scalaire entre deux vecteurs
-    float produit_scalaire(const vector<float> &a, const vector<float> &b) {
+    // Dot product between two vectors
+    float dot_product(const vector<float> &a, const vector<float> &b) {
         assert(a.size() == b.size());
         float out(0.f);
         for (size_t i = 0; i < a.size(); ++i) {
@@ -24,8 +24,8 @@ namespace NeuralNetwork {
         return out;
     }
 
-    // Produit scalaire entre un vecteur et la i-�me colone d'une matrice
-    float produit_scalaire_transpose(const vector<float> &a, const vector<vector<float> > &b, int i) {
+    // Dot product between a vector and the i-th column of a matrix
+    float transposed_dot_product(const vector<float> &a, const vector<vector<float> > &b, const size_t i) {
         assert(a.size() == b.size());
         float out(0.f);
         for (size_t j = 0; j < a.size(); ++j) {
@@ -34,50 +34,50 @@ namespace NeuralNetwork {
         return out;
     }
 
-    // Multiplication d'une matrice et d'un vecteur
+    // Multiplication of a matrix and a vector
     vector<float> mat_mul(const vector<vector<float> > &mat, const vector<float> &vec) {
         vector<float> out(mat.size());
         for (size_t i = 0; i < mat.size(); ++i) {
-            out[i] = produit_scalaire(mat[i], vec);
+            out[i] = dot_product(mat[i], vec);
         }
         return out;
     }
 
-    // Multiplication d'une matrice et d'un vecteur. On applique la fonction tangente hyperbolique au r�sultat.
+    // Multiplication of a matrix and a vector. We apply the hyperbolic tangent function to the result.
     vector<float> mat_mul_tanh(const vector<vector<float> > &mat, const vector<float> &vec) {
         vector<float> out(mat.size());
         for (size_t i = 0; i < mat.size(); ++i) {
-            out[i] = tanh(produit_scalaire(mat[i], vec));
+            out[i] = tanh(dot_product(mat[i], vec));
         }
         return out;
     }
 
-    // Calcul du carr� de la norme de la diff�rence des deux vecteurs
-    float cost(vector<float> outputs, vector<float> expected_outputs) {
+    // Compute the square of the Euclidean distance between two vectors
+    float cost(const vector<float> &outputs, const vector<float> &expected_outputs) {
         assert(outputs.size() == expected_outputs.size());
         float out(0.f);
         for (size_t i = 0; i < outputs.size(); ++i) {
-            float d = outputs[i] - expected_outputs[i];
+            const float d = outputs[i] - expected_outputs[i];
             out += d * d;
         }
         return out;
     }
 
-    // Constructeurs
-    // -------------
+    // Constructors
+    // ------------
 
     Network::Network() = default;
 
     Network::Network(istream &is)
         : m_layers_(deserialize(is)) {
-        size_t n_layers = m_layers_.size() + 1;
-        m_previous_state_ = vector<vector<float> >(n_layers, vector<float>());
-        m_rec_ = vector<bool>(n_layers, false);
+        const size_t n_layers = m_layers_.size() + 1;
+        m_previous_state_ = vector(n_layers, vector<float>());
+        m_rec_ = vector(n_layers, false);
     }
 
     Network::Network(istream &is, const vector<bool> &rec)
         : m_layers_(deserialize(is)), m_rec_(rec) {
-        size_t n_layers = m_layers_.size() + 1;
+        const size_t n_layers = m_layers_.size() + 1;
         m_previous_state_ = vector<vector<float> >(n_layers);
         m_previous_state_[0] = vector<float>();
         for (size_t i = 1; i < n_layers; ++i) {
@@ -86,7 +86,7 @@ namespace NeuralNetwork {
     }
 
     Network::Network(const vector<int> &layers)
-        : Network(layers, vector<bool>(layers.size(), false)) {
+        : Network(layers, vector(layers.size(), false)) {
     }
 
     Network::Network(const vector<int> &layers, const vector<bool> &rec)
@@ -104,10 +104,9 @@ namespace NeuralNetwork {
 
         // Initialize the layers
         for (size_t i = 0; i < n_layers - 1; i++) {
-            const size_t nombre_de_neurones_couche_precedente = actual_layers[i];
-            const size_t nombre_de_neurone = actual_layers[i + 1];
-            m_layers_[i] = vector<vector<float> >(nombre_de_neurone,
-                                                  vector<float>(nombre_de_neurones_couche_precedente));
+            const size_t previous_layer_neuron_count = actual_layers[i];
+            const size_t neuron_count = actual_layers[i + 1];
+            m_layers_[i] = vector(neuron_count, vector<float>(previous_layer_neuron_count));
         }
 
         m_previous_state_ = vector<vector<float> >(n_layers);
@@ -123,15 +122,15 @@ namespace NeuralNetwork {
         }
     }
 
-    Network::Network(vector<vector<vector<float> > > data)
-        : Network(data, vector<bool>(data.size() + 1, false)) {
+    Network::Network(const vector<vector<vector<float> > >& data)
+        : Network(data, vector(data.size() + 1, false)) {
     }
 
     Network::Network(vector<vector<vector<float> > > data, const vector<bool> &rec) {
         m_layers_ = move(data);
         m_rec_ = rec;
 
-        size_t n_layers = m_layers_.size();
+        const size_t n_layers = m_layers_.size();
         m_previous_state_ = vector<vector<float> >(n_layers + 1);
         m_previous_state_[0] = vector<float>();
         for (size_t i = 1; i < n_layers + 1; ++i) {
@@ -139,7 +138,7 @@ namespace NeuralNetwork {
         }
     }
 
-    Network::Network(int n_inputs, int n_hidden, int n_wires, int n_outputs)
+    Network::Network(int n_inputs, int n_hidden, const int n_wires, const int n_outputs)
         : Network({n_inputs, n_hidden, n_wires * (n_outputs + 1)}) {
         m_n_controls_ = n_outputs;
         m_n_wires_ = n_wires;
@@ -152,57 +151,54 @@ namespace NeuralNetwork {
         }
     }
 
-    // Algorithme d'entra�nement
-    // -------------------------
+    // Training algorithms
+    // -------------------
 
-    float Network::train(const vector<float> &inputs, const vector<float> &expected_outputs, float epsilon) {
+    float Network::train(const vector<float> &inputs, const vector<float> &expected_outputs, const float epsilon) {
         // Check if the inputs have a valid size for the layer
         assert(inputs.size() == m_layers_[0][0].size());
         assert(expected_outputs.size() == m_layers_[m_layers_.size() - 1].size());
 
-        vector<vector<float> > activation_neurones(m_layers_.size() + 1);
-        vector<vector<float> > erreur_neurones(m_layers_.size() + 1);
+        vector<vector<float> > neuron_activations(m_layers_.size() + 1);
+        vector<vector<float> > neuron_errors(m_layers_.size() + 1);
 
-        activation_neurones[0] = inputs; // si i est une cellule d'entr�e: Khi_i=X_i
+        neuron_activations[0] = inputs;
 
         for (size_t n = 1; n <= m_layers_.size(); ++n) {
-            activation_neurones[n] = mat_mul_tanh(m_layers_[n - 1], activation_neurones[n - 1]);
-            // sinon X_i = f[A_i] avec A_i = somme(j; W_i,j * X_j)
+            neuron_activations[n] = mat_mul_tanh(m_layers_[n - 1], neuron_activations[n - 1]);
         }
         for (size_t i = 0; i < m_layers_[m_layers_.size() - 1].size(); ++i)
-        // si s est une cellule de sortie: Y_s = 2 (Sh_s - Yh_s) * f'(As)
         {
-            float tanh_A = tanh(produit_scalaire(activation_neurones[m_layers_.size() - 1],
-                                                 m_layers_[m_layers_.size() - 1][i]));
-            erreur_neurones[m_layers_.size()].push_back(
-                2 * (activation_neurones[m_layers_.size()][i] - expected_outputs[i]) * (1 - tanh_A * tanh_A));
+            const float tanh_A = tanh(dot_product(neuron_activations[m_layers_.size() - 1],
+                                                       m_layers_[m_layers_.size() - 1][i]));
+            neuron_errors[m_layers_.size()].push_back(
+                2 * (neuron_activations[m_layers_.size()][i] - expected_outputs[i]) * (1 - tanh_A * tanh_A));
         }
-        for (int n = m_layers_.size(); n > 1; --n) {
-            vector<float> tanh_A_vector = mat_mul_tanh(m_layers_[n - 1 - 1], activation_neurones[n - 1 - 1]);
-            for (size_t j = 0; j < m_layers_[n - 1][0].size(); ++j) // sinon: Y_i = f'(A_i) * somme(j; W_j,i * Y_j)
+        for (int n = static_cast<int>(m_layers_.size()); n > 1; --n) {
+            vector<float> tanh_A_vector = mat_mul_tanh(m_layers_[n - 1 - 1], neuron_activations[n - 1 - 1]);
+            for (size_t j = 0; j < m_layers_[n - 1][0].size(); ++j)
             {
-                // float tanh_A = tanh(produit_scalaire(activation_neurones[i-1], m_layers_[i-1 - 1][j]));
-                float B = produit_scalaire_transpose(erreur_neurones[n], m_layers_[n - 1], j);
-                erreur_neurones[n - 1].push_back((1 - tanh_A_vector[j] * tanh_A_vector[j]) * B);
+                const float B = transposed_dot_product(neuron_errors[n], m_layers_[n - 1], j);
+                neuron_errors[n - 1].push_back((1 - tanh_A_vector[j] * tanh_A_vector[j]) * B);
             }
         }
 
         for (size_t n = 0; n < m_layers_.size(); ++n) {
             for (size_t i = 0; i < m_layers_[n].size(); ++i) {
                 for (size_t j = 0; j < m_layers_[n][i].size(); ++j) {
-                    m_layers_[n][i][j] -= epsilon * activation_neurones[n][j] * erreur_neurones[n + 1][i];
+                    m_layers_[n][i][j] -= epsilon * neuron_activations[n][j] * neuron_errors[n + 1][i];
                 }
             }
         }
-        return cost(activation_neurones[m_layers_.size()], expected_outputs);
+        return cost(neuron_activations[m_layers_.size()], expected_outputs);
     }
 
     vector<float> Network::compute(const vector<float> &inputs) {
         vector<float> computed = inputs;
         for (size_t i = 0; i < m_layers_.size(); ++i) {
             if (m_rec_[i + 1]) {
-                for (size_t j = 0; j < m_previous_state_[i + 1].size(); ++j) {
-                    computed.push_back(m_previous_state_[i + 1][j]);
+                for (float j : m_previous_state_[i + 1]) {
+                    computed.push_back(j);
                 }
             }
             computed = mat_mul_tanh(m_layers_[i], computed);

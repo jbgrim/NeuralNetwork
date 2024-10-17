@@ -7,4 +7,5 @@ add_library(NeuralNetwork SHARED
         Network.cpp
         Network.h
         Serialize.cpp
-        QLearning.cpp)
+        QLearning.cpp
+        Genetic.cpp)
